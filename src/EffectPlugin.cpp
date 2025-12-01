@@ -85,8 +85,6 @@ void MyEffect::buttonPressed(int iButton)
     // A button, with index iButton, has been pressed
 }
 
-// Applies audio processing to a buffer of audio
-// (inputBuffer contains the input audio, and processed samples should be stored in outputBuffer)
 void MyEffect::process(const float** inputBuffers, float** outputBuffers, int numSamples)
 {
     float fIn0, fIn1, fOut0 = 0, fOut1 = 0;
@@ -105,7 +103,7 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
         fIn1 = *pfInBuffer1++;
         
         float fmono = (fIn0 + fIn1)* 0.5;  // get a mono mix
-        reflections.tick(fmono);        // put it into our delay buffer
+        reflections.tick(fmono);           // put it into our delay buffer
         
         //creating signals
         float ds1 = reflections.tapOut( delaytime[0] ) * delaylevl[0];
@@ -121,12 +119,10 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
         }
         // a loop for if we want to extend the early reflections generator to have a lot more of reflections
         */
+        
         float dsMix = ds1 + ds2 + ds3 + ds4;
-        float FMM = dsMix + fmono;
-        
-        //feedback matrix multiplier
-        
-        fOut0 =dsMix + FMM;
+        // Add your effect processing here
+        fOut0 =dsMix;
         fOut1 = fIn1;
         
         // Copy result to output
