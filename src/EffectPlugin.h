@@ -29,5 +29,8 @@ public:
     void buttonPressed(int iButton);
 
 private:
-    Delay reflections;
+    float Pmulti; // path multiplier
+    Delay Pathdelay;
+    LPF Pathfilter;
+    
 };
