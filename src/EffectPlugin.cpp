@@ -30,8 +30,8 @@ extern "C" {
         const Parameters CONTROLS = {
             //  name,       type,              min, max, initial, size
             {   "Time",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
-            {   "Param 1",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
-            {   "Param 2",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
+            {   "Filter",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
+            {   "Gain",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 3",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 4",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 5",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
@@ -56,9 +56,19 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
 : Effect(parameters, presets)
 {   // Initialise member variables
 
-    reflections.setMaximumDelay(41000);
-    reflections.clear();
+
+    
+    Pathdelay1.setMaximumDelay(41000);
+    Pathdelay1.clear();
+    Pathtime1 = 4000;                  // we'll use this with tapOut()
+    Pathfilter1.setCutoff(3000);
+    Pathmulti1 = 0.4;
    
+    Pathdelay2.setMaximumDelay(41000);
+    Pathdelay2.clear();
+    Pathtime2 = 5000;                  // we'll use this with tapOut()
+    Pathfliter2.setCutoff(4000);
+    Pathmulti2 = 0.3;
 }
 
 // Destructor: called when the effect is terminated / unloaded
@@ -84,6 +94,12 @@ void MyEffect::buttonPressed(int iButton)
 {
     // A button, with index iButton, has been pressed
 }
+float PathProcess()
+{
+
+        
+
+}
 
 void MyEffect::process(const float** inputBuffers, float** outputBuffers, int numSamples)
 {
@@ -91,38 +107,34 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
     const float *pfInBuffer0 = inputBuffers[0], *pfInBuffer1 = inputBuffers[1];
     float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
     
-    // early reflections generator
-    float delaytime[4] = { 101, 211, 347, 400 };
-    float delaylevl[4] = { 0.8, 0.7, 0.63, 0.48 };
-    
-    reflections.setDelay(0);
     while(numSamples--)
     {
         // Get sample from input
         fIn0 = *pfInBuffer0++;
         fIn1 = *pfInBuffer1++;
         
-        float fmono = (fIn0 + fIn1)* 0.5;  // get a mono mix
-        reflections.tick(fmono);           // put it into our delay buffer
+        float fmonoIn = (fIn0 + fIn1)* 0.5;// get a mono mix
         
-        //creating signals
-        float ds1 = reflections.tapOut( delaytime[0] ) * delaylevl[0];
-        float ds2 = reflections.tapOut( delaytime[1] ) * delaylevl[1];
-        float ds3 = reflections.tapOut( delaytime[2] ) * delaylevl[2];
-        float ds4 = reflections.tapOut( delaytime[3] ) * delaylevl[3];
-        /*
-        float dsmix = 0;
-        for (int i=0; i<300; i++)
-        {
-            float ds = reflections.tapOut( delaytime[i] ) * delaylevl[i];
-            dsmix = dsmix + ds;
-        }
-        // a loop for if we want to extend the early reflections generator to have a lot more of reflections
-        */
+        float Path1 = Pathdelay1.tapOut(Pathtime1); // delay the music
+        Path1 = Pathfilter1.tick(Path1);            // filter the music
+        Path1 = Path1 * Pathmulti1;
         
-        float dsMix = ds1 + ds2 + ds3 + ds4;
+        float Path2 = Pathdelay2.tapOut(Pathtime2); // delay the music
+        Path2 = Pathfliter2.tick(Path2);             // filter the music
+        Path2 = Path2 * Pathmulti2;
+        
+        // compute feedback
+        float pathFeedbackto1 = 0*(Path1) + 1*(Path2);
+        float pathFeedbackto2 = -1*(Path1) + 0*(Path2);
+        
+        // put the music in the delay paths
+        Pathdelay1.tick(pathFeedbackto1 + fmonoIn);
+        Pathdelay2.tick(pathFeedbackto2 + fmonoIn);
+       
+        float pathFeedbackMix = pathFeedbackto1 + pathFeedbackto2;
+      
         // Add your effect processing here
-        fOut0 =dsMix;
+        fOut0 = pathFeedbackMix;
         fOut1 = fIn1;
         
         // Copy result to output

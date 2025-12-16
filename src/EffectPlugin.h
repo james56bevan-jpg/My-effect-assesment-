@@ -29,5 +29,14 @@ public:
     void buttonPressed(int iButton);
 
 private:
-    Delay reflections;
+    float Pathmulti1; // Path 1
+    Delay Pathdelay1;
+    float Pathtime1;
+    LPF Pathfilter1;
+    
+    float Pathmulti2; // Path 2
+    Delay Pathdelay2;
+    float Pathtime2;
+    LPF Pathfliter2;
+    
 };
