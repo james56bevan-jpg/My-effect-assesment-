@@ -94,26 +94,9 @@ void MyEffect::buttonPressed(int iButton)
 {
     // A button, with index iButton, has been pressed
 }
-float PathProcess()
+float MyEffect::PathProcess(float fIn0, float fIn1)
 {
-
-        
-
-}
-
-void MyEffect::process(const float** inputBuffers, float** outputBuffers, int numSamples)
-{
-    float fIn0, fIn1, fOut0 = 0, fOut1 = 0;
-    const float *pfInBuffer0 = inputBuffers[0], *pfInBuffer1 = inputBuffers[1];
-    float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
-    
-    while(numSamples--)
-    {
-        // Get sample from input
-        fIn0 = *pfInBuffer0++;
-        fIn1 = *pfInBuffer1++;
-        
-        float fmonoIn = (fIn0 + fIn1)* 0.5;// get a mono mix
+    float fmonoIn = (fIn0 + fIn1)* 0.5;// get a mono mix
         
         float Path1 = Pathdelay1.tapOut(Pathtime1); // delay the music
         Path1 = Pathfilter1.tick(Path1);            // filter the music
@@ -127,14 +110,28 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
         float pathFeedbackto1 = 0*(Path1) + 1*(Path2);
         float pathFeedbackto2 = -1*(Path1) + 0*(Path2);
         
-        // put the music in the delay paths
         Pathdelay1.tick(pathFeedbackto1 + fmonoIn);
         Pathdelay2.tick(pathFeedbackto2 + fmonoIn);
        
-        float pathFeedbackMix = pathFeedbackto1 + pathFeedbackto2;
+        return pathFeedbackto1 + pathFeedbackto2;
+}
+
+void MyEffect::process(const float** inputBuffers, float** outputBuffers, int numSamples)
+{
+    float fIn0, fIn1, fOut0 = 0, fOut1 = 0;
+    const float *pfInBuffer0 = inputBuffers[0], *pfInBuffer1 = inputBuffers[1];
+    float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
+    
+    while(numSamples--)
+    {
       
+        // Get sample from input
+        fIn0 = *pfInBuffer0++;
+        fIn1 = *pfInBuffer1++;
+        
+    
         // Add your effect processing here
-        fOut0 = pathFeedbackMix;
+        fOut0 = PathProcess(fIn0, fIn1);
         fOut1 = fIn1;
         
         // Copy result to output

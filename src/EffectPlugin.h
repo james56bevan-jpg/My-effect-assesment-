@@ -21,14 +21,17 @@ public:
 
     void setSampleRate(float sampleRate){ stk::Stk::setSampleRate(sampleRate); }
     float getSampleRate() const { return stk::Stk::sampleRate(); };
-    
+
     void process(const float** inputBuffers, float** outputBuffers, int numSamples);
     
     void presetLoaded(int iPresetNum, const char *sPresetName);
     void optionChanged(int iOptionMenu, int iItem);
     void buttonPressed(int iButton);
+    
 
 private:
+    float PathProcess(float fIn0, float fIn1);
+    
     float Pathmulti1; // Path 1
     Delay Pathdelay1;
     float Pathtime1;
