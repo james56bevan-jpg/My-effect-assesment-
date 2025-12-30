@@ -92,7 +92,7 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
     float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
     
     // early reflections generator
-    float delaytime[4] = { 101, 211, 347, 400 };
+    float delaytime[4] = { 404, 844, 1388, 1600 };
     float delaylevl[4] = { 0.8, 0.7, 0.63, 0.48 };
     
     reflections.setDelay(0);
