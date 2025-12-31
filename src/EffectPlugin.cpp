@@ -58,9 +58,46 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
 
     reflections.setMaximumDelay(41000);
     reflections.clear();
-   
+    
+}
+LaterReflection::LaterReflection()
+{
+
 }
 
+float LaterReflection::process(float fin1, float fin0)
+{
+        float fmonoIn = (fin0 + fin0)* 0.5;
+        
+        float Path1 = Pathdelay1.tapOut(Pathtime1); // delay the music
+        Path1 = Pathfilter1.tick(Path1);            // filter the music
+        Path1 = Path1 * Pathmulti1;
+        
+        float Path2 = Pathdelay2.tapOut(Pathtime2); // delay the music
+        Path2 = Pathfilter2.tick(Path2);             // filter the music
+        Path2 = Path2 * Pathmulti2;
+        
+        float Path3 = Pathdelay3.tapOut(Pathtime3);
+        Path3 = Pathfilter3.tick(Path3);
+        Path3= Path3 * Pathmulti3;
+        
+        float Path4 = Pathdelay4.tapOut(Pathtime4);
+        Path4 = Pathfilter4.tick(Path4);
+        Path4 = Path4 * Pathmulti4;
+        
+        // compute feedback
+        float pathFeedbackto1 =  0*(Path1) + 1*(Path2) +1*(Path3) -1*(Path4);
+        float pathFeedbackto2 = -1*(Path1) + 0*(Path2) -1*(Path3) +1*(Path4);
+        float pathFeedbackto3 = -1*(Path1) + 1*(Path2) +0*(Path3) -1*(Path4);
+        float pathFeedbackto4 =  1*(Path1) - 1*(Path2) +1*(Path4) +0*(Path4);
+        
+        Pathdelay1.tick(pathFeedbackto1 + fmonoIn);
+        Pathdelay2.tick(pathFeedbackto2 + fmonoIn);
+        Pathdelay3.tick(pathFeedbackto3 + fmonoIn);
+        Pathdelay4.tick(pathFeedbackto4 + fmonoIn);
+        
+        return pathFeedbackto1 + pathFeedbackto2 + pathFeedbackto3 + pathFeedbackto4;
+}
 // Destructor: called when the effect is terminated / unloaded
 MyEffect::~MyEffect()
 {
