@@ -42,4 +42,14 @@ private:
     float Pathtime2;
     LPF Pathfliter2;
     
+    float Pathmulti3; // Path 3
+    Delay Pathdelay3;
+    float Pathtime3;
+    LPF Pathfliter3;
+    
+    float Pathmulti4; // Path 4
+    Delay Pathdelay4;
+    float Pathtime4;
+    LPF Pathfliter4;
+    
 };
