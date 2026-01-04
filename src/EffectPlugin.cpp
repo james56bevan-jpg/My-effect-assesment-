@@ -29,7 +29,7 @@ extern "C" {
         
         const Parameters CONTROLS = {
             //  name,       type,              min, max, initial, size
-            {   "Pre-Gain", Parameter::ROTARY, 0.0, 1.5, 1.0, AUTO_SIZE  },
+            {   "Pre-Gain", Parameter::ROTARY, 0.0, 1.5, 1.0, AUTO_SIZE  }, // pre gain currently isn't doing anything but I will gert round to it soon
             {   "Param 1",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 2",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 3",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
@@ -62,7 +62,7 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
  float EarlyReflect();
  float MyEffect::EarlyReflect (float fIn1, float fIn0)
  {
-    float delaytime[4] = { 101, 211, 347, 400 };
+    float delaytime[4] = { 303, 633, 1041, 1200 };
     float delaylevl[4] = { 0.8, 0.7, 0.63, 0.48 };
     reflections.setDelay(0);
     float fmono = (fIn0 + fIn1)* 0.5;  // get a mono mix
@@ -88,37 +88,39 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
  }
 LaterReflection::LaterReflection()
 {
+// Keep Multipilers always bellow 7 because there is no dampening
+
        Pathdelay1.setMaximumDelay(41000);
         Pathdelay1.clear();
         Pathtime1 = 4000;                  // we'll use this with tapOut()
         Pathfilter1.setCutoff(3000);
-        Pathmulti1 = 0.4;
+        Pathmulti1 = 0.6;
        
         Pathdelay2.setMaximumDelay(41000);
         Pathdelay2.clear();
         Pathtime2 = 5000;                  // we'll use this with tapOut()
         Pathfilter2.setCutoff(4000);
-        Pathmulti2 = 0.3;
+        Pathmulti2 = 0.5;
         
         Pathdelay3.setMaximumDelay(41000);
         Pathdelay3.clear();
         Pathtime3 = 6000;                  // we'll use this with tapOut()
         Pathfilter3.setCutoff(4500);
-        Pathmulti3 = 0.25;
+        Pathmulti3 = 0.45;
     
         Pathdelay4.setMaximumDelay(41000);
         Pathdelay4.clear();
         Pathtime4 = 7000;                  // we'll use this with tapOut()
         Pathfilter4.setCutoff(5000);
-        Pathmulti4 = 0.2;
+        Pathmulti4 = 0.4;
 }
 
 float LaterReflection::process(float fin1, float fin0)
 {
-        float fmonoIn = (fin0 + fin0)* 0.5;
+        float fmonoIn = (fin1 + fin0)* 0.5;
         
         float Path1 = Pathdelay1.tapOut(Pathtime1); // delay the music
-        Path1 = Pathfilter1.tick(Path1);            // filter the music
+        Path1 = Pathfilter1.tick(Path1)*0.98; // frequency dependant decay to stop ringing
         Path1 = Path1 * Pathmulti1;
         
         float Path2 = Pathdelay2.tapOut(Pathtime2); // delay the music
@@ -133,17 +135,18 @@ float LaterReflection::process(float fin1, float fin0)
         Path4 = Pathfilter4.tick(Path4);
         Path4 = Path4 * Pathmulti4;
         
-        // compute feedback
-        float pathFeedbackto1 =  0*(Path1) + 1*(Path2) +1*(Path3) -1*(Path4);
-        float pathFeedbackto2 = -1*(Path1) + 0*(Path2) -1*(Path3) +1*(Path4);
-        float pathFeedbackto3 = -1*(Path1) + 1*(Path2) +0*(Path3) -1*(Path4);
-        float pathFeedbackto4 =  1*(Path1) - 1*(Path2) +1*(Path4) +0*(Path4);
+        constexpr float norm = 0.5; // 1 / sqrt(4)  // feedback matrix norm will always 0.5 hence why I used constexpr
         
-        Pathdelay1.tick(pathFeedbackto1 + fmonoIn);
-        Pathdelay2.tick(pathFeedbackto2 + fmonoIn);
-        Pathdelay3.tick(pathFeedbackto3 + fmonoIn);
-        Pathdelay4.tick(pathFeedbackto4 + fmonoIn);
+        float pathFeedbackto1 = norm * ( Path2 + Path3 - Path4 );
+        float pathFeedbackto2 = norm * ( -Path1 - Path3 + Path4 );
+        float pathFeedbackto3 = norm * ( -Path1 + Path2 - Path4 );
+        float pathFeedbackto4 = norm * ( Path1 - Path2 + Path3 );
         
+        Pathdelay1.tick(pathFeedbackto1 * Pathmulti1 + fmonoIn);
+        Pathdelay2.tick(pathFeedbackto2 * Pathmulti2 + fmonoIn);
+        Pathdelay3.tick(pathFeedbackto3 * Pathmulti3 + fmonoIn);
+        Pathdelay4.tick(pathFeedbackto4 * Pathmulti4 + fmonoIn);
+
         return pathFeedbackto1 + pathFeedbackto2 + pathFeedbackto3 + pathFeedbackto4;
 }
 // Destructor: called when the effect is terminated / unloaded
@@ -176,15 +179,20 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
     float fIn0, fIn1, fOut0 = 0, fOut1 = 0;
     const float *pfInBuffer0 = inputBuffers[0], *pfInBuffer1 = inputBuffers[1];
     float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
-    reflections.setDelay(0);
+   
     while(numSamples--)
     {
         // Get sample from input
         fIn0 = *pfInBuffer0++;
         fIn1 = *pfInBuffer1++;
         
-        float Lrg = laterReflection.process(fIn0,fIn1);
-        float Wet = EarlyReflect(fIn0, fIn1) + Lrg + Lrg;
+        float early = EarlyReflect(fIn0, fIn1);
+// early reflections into later reflections
+        float late = laterReflection.process(early,early);
+        
+// final wet signal
+        float Wet = early + late;
+
         // Add your effect processing here
         fOut0 = Wet;
         fOut1 = Wet;
