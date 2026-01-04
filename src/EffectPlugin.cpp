@@ -67,6 +67,30 @@ LaterReflection::LaterReflection()
 
 float LaterReflection::process(float fin1, float fin0)
 {
+        Pathdelay1.setMaximumDelay(41000);
+        Pathdelay1.clear();
+        Pathtime1 = 4000;                  // we'll use this with tapOut()
+        Pathfilter1.setCutoff(3000);
+        Pathmulti1 = 0.4;
+       
+        Pathdelay2.setMaximumDelay(41000);
+        Pathdelay2.clear();
+        Pathtime2 = 5000;                  // we'll use this with tapOut()
+        Pathfilter2.setCutoff(4000);
+        Pathmulti2 = 0.3;
+        
+        Pathdelay3.setMaximumDelay(41000);
+        Pathdelay3.clear();
+        Pathtime3 = 6000;                  // we'll use this with tapOut()
+        Pathfilter3.setCutoff(4500);
+        Pathmulti3 = 0.25;
+    
+        Pathdelay4.setMaximumDelay(41000);
+        Pathdelay4.clear();
+        Pathtime4 = 7000;                  // we'll use this with tapOut()
+        Pathfilter4.setCutoff(5000);
+        Pathmulti4 = 0.2;
+        
         float fmonoIn = (fin0 + fin0)* 0.5;
         
         float Path1 = Pathdelay1.tapOut(Pathtime1); // delay the music
@@ -158,11 +182,12 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
         */
         
         float dsMix = ds1 + ds2 + ds3 + ds4;
+        float Lrg1= laterReflection.process(fIn0,fIn1);
         // Add your effect processing here
-        fOut0 =dsMix;
+        fOut0 =dsMix + Lrg1;
         fOut1 = fIn1;
         
-        // Copy result to output
+        // Copy result to output 
         *pfOutBuffer0++ = fOut0;
         *pfOutBuffer1++ = fOut1;
     }

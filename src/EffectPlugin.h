@@ -52,5 +52,6 @@ public:
 
 private:
     Delay reflections;
+    LaterReflection laterReflection;
 };
 
