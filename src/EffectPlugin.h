@@ -53,6 +53,7 @@ private:
 
     Delay reflections;
     LaterReflection laterReflection;
+    LaterReflection LaterReflect2;
     float PreGain;
 };
 

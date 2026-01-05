@@ -29,8 +29,8 @@ extern "C" {
         
         const Parameters CONTROLS = {
             //  name,       type,              min, max, initial, size
-            {   "Pre-Gain", Parameter::ROTARY, 0.0, 1.5, 1.0, AUTO_SIZE  }, // pre gain currently isn't doing anything but I will get round to it soon
-            {   "Param 1",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
+            {   "Wet_Dry_mix", Parameter::ROTARY, 0.0, 1.0, 0.3, AUTO_SIZE  },
+            {   "Early_Gain",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 2",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 3",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 4",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
@@ -62,28 +62,27 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
  float EarlyReflect();
  float MyEffect::EarlyReflect (float fIn1, float fIn0)
  {
-        float delaytime[4] = { 303, 633, 1041, 1200 };
-        float delaylevl[4] = { 0.8, 0.7, 0.63, 0.48 };
+        constexpr int numTaps = 12;
+        float delaytime[numTaps] = { 101, 211, 347, 400, 202, 422, 694, 800, 303, 633, 1041, 1200 };
+        float delaylevl[numTaps] = { 0.90, 0.82, 0.75, 0.69,0.63, 0.58, 0.53, 0.49,0.45, 0.41, 0.38, 0.35,};
         reflections.setDelay(0);
         float fmono = (fIn0 + fIn1)* 0.5;  // get a mono mix
         reflections.tick(fmono);           // put it into our delay buffer
         
         //creating signals
+        /*
         float ds1 = reflections.tapOut( delaytime[0] ) * delaylevl[0];
         float ds2 = reflections.tapOut( delaytime[1] ) * delaylevl[1];
         float ds3 = reflections.tapOut( delaytime[2] ) * delaylevl[2];
         float ds4 = reflections.tapOut( delaytime[3] ) * delaylevl[3];
-        /*
-        float dsMix = 0;
-        for (int i=0; i<300; i++)
-        {
-            float ds = reflections.tapOut( delaytime[i] ) * delaylevl[i];
-            dsmix = dsMix + ds;
-        }
-        // a loop for if we want to extend the early reflections generator to have a lot more of reflections
         */
-        float dsMix = ds1 + ds2 + ds3 + ds4;
- 
+        float dsMix = 0;
+        for (int i=0; i<numTaps; i++)
+        {
+             dsMix += reflections.tapOut( delaytime[i] ) * delaylevl[i];
+        }
+        dsMix *= 0.25;
+        // a loop for if we want to extend the early reflections generator to have a lot more of reflection
         return dsMix;
  }
 LaterReflection::LaterReflection()
@@ -179,22 +178,27 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
     float fIn0, fIn1, fOut0 = 0, fOut1 = 0;
     const float *pfInBuffer0 = inputBuffers[0], *pfInBuffer1 = inputBuffers[1];
     float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
-   
+    float mix = parameters[0];
+    //float earlyGain = parameters[1];
     while(numSamples--)
     {
         // Get sample from input
         fIn0 = *pfInBuffer0++;
         fIn1 = *pfInBuffer1++;
-        
+     
+    
+        float dry = 0.5 * (fIn0 + fIn1);
+
         float early = EarlyReflect(fIn0, fIn1);
-// early reflections into later reflections
-        float late = laterReflection.process(early,early);
-// final wet signal
-        float Wet = early + late;
+        float late  = laterReflection.process(early, early);
+        float latest = LaterReflect2.process(late, late);
+
+        float wet = (early + late + latest) * 2.0;
+        float out = (1.0 - mix) * dry + mix * wet;
 
         // Add your effect processing here
-        fOut0 = Wet;
-        fOut1 = Wet;
+        fOut0 = out;
+        fOut1 = out;
         
         // Copy result to output
         *pfOutBuffer0++ = fOut0;
