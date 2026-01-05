@@ -12,28 +12,6 @@
 using namespace APDI;
 
 #include "EffectExtra.h"
-class LaterReflection
-{
-public:
-    LaterReflection();
-    
-    float process(float fin0, float fin1);
-    
-    float Pathtime1, Pathtime2, Pathtime3, Pathtime4;
-    float Pathmulti1, Pathmulti2, Pathmulti3, Pathmulti4;
-    
-private:
- Delay Pathdelay1;
- Delay Pathdelay2;
- Delay Pathdelay3;
- Delay Pathdelay4;
- 
- LPF Pathfilter1;
- LPF Pathfilter2;
- LPF Pathfilter3;
- LPF Pathfilter4;
-
-};
 
 class MyEffect : public APDI::Effect
 {
@@ -51,9 +29,10 @@ public:
 private:
     float EarlyReflect (float fIn1, float fIn0);
 
-    Delay reflections;
-    LaterReflection laterReflection;
-    LaterReflection LaterReflect2;
+  
+    EarlyReflections earlyReflections;
+    LaterReflection lateBlock0;
+    LaterReflection LateBlock1;
     float PreGain;
 };
 
