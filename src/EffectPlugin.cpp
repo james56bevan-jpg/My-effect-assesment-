@@ -29,7 +29,7 @@ extern "C" {
         
         const Parameters CONTROLS = {
             //  name,       type,              min, max, initial, size
-            {   "Pre-Gain", Parameter::ROTARY, 0.0, 1.5, 1.0, AUTO_SIZE  }, // pre gain currently isn't doing anything but I will gert round to it soon
+            {   "Pre-Gain", Parameter::ROTARY, 0.0, 1.5, 1.0, AUTO_SIZE  }, // pre gain currently isn't doing anything but I will get round to it soon
             {   "Param 1",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 2",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 3",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
@@ -62,10 +62,10 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
  float EarlyReflect();
  float MyEffect::EarlyReflect (float fIn1, float fIn0)
  {
-    float delaytime[4] = { 303, 633, 1041, 1200 };
-    float delaylevl[4] = { 0.8, 0.7, 0.63, 0.48 };
-    reflections.setDelay(0);
-    float fmono = (fIn0 + fIn1)* 0.5;  // get a mono mix
+        float delaytime[4] = { 303, 633, 1041, 1200 };
+        float delaylevl[4] = { 0.8, 0.7, 0.63, 0.48 };
+        reflections.setDelay(0);
+        float fmono = (fIn0 + fIn1)* 0.5;  // get a mono mix
         reflections.tick(fmono);           // put it into our delay buffer
         
         //creating signals
@@ -74,11 +74,11 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
         float ds3 = reflections.tapOut( delaytime[2] ) * delaylevl[2];
         float ds4 = reflections.tapOut( delaytime[3] ) * delaylevl[3];
         /*
-        float dsmix = 0;
+        float dsMix = 0;
         for (int i=0; i<300; i++)
         {
             float ds = reflections.tapOut( delaytime[i] ) * delaylevl[i];
-            dsmix = dsmix + ds;
+            dsmix = dsMix + ds;
         }
         // a loop for if we want to extend the early reflections generator to have a lot more of reflections
         */
@@ -189,7 +189,6 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
         float early = EarlyReflect(fIn0, fIn1);
 // early reflections into later reflections
         float late = laterReflection.process(early,early);
-        
 // final wet signal
         float Wet = early + late;
 
