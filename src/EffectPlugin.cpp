@@ -29,9 +29,9 @@ extern "C" {
         
         const Parameters CONTROLS = {
             //  name,       type,              min, max, initial, size
-            {   "Wet_Dry_mix", Parameter::ROTARY, 0.0, 1.0, 0.3, AUTO_SIZE  },
-            {   "Early_Gain",  Parameter::ROTARY, 0.0, 1.0, 1.0, AUTO_SIZE  },
-            {   "Param 2",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
+            { "Wet_Dry_mix",Parameter::ROTARY, 0.0, 1.0, 0.3, AUTO_SIZE  },
+            {  "Early_Gain",Parameter::ROTARY, 0.0, 1.0, 1.0, AUTO_SIZE  },
+            {   "Room_Size",Parameter::ROTARY, 0.5, 4.0, 1.0, AUTO_SIZE  },
             {   "Param 3",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 4",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 5",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
@@ -58,15 +58,25 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
   earlyReflections.prepare(41000);
 }
  EarlyReflections::EarlyReflections()
- {}
+ {
+   for (int i = 0; i < numTaps; i++)
+        baseDelayTime[i] = delayTime[i];
+ }
  void EarlyReflections::prepare(int maxDelaySamples)
 {
     Reflections.setMaximumDelay(maxDelaySamples);
     Reflections.clear();
 }
+void EarlyReflections::setRoomSize(float scale)
+{
+for (int i = 0; i < numTaps; i++)
+    {
+      delayTime[i]= baseDelayTime[i] * scale;
+    }
+}
  float EarlyReflections::process(float fin1,float fin0)
  {
-    Reflections.setDelay(0);
+    //Reflections.setDelay(0); not needed with room size parameter
   float fmono = (fin1 + fin0)*0.5;
    Reflections.tick(fmono);
 
@@ -80,33 +90,44 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
  }
 LaterReflection::LaterReflection()
 {
-// Keep Multipilers always bellow 7 because there is no dampening
-
-       Pathdelay1.setMaximumDelay(41000);
+        Pathdelay1.setMaximumDelay(41000);
         Pathdelay1.clear();
-        Pathtime1 = 4000;                  // we'll use this with tapOut()
         Pathfilter1.setCutoff(3000);
-        Pathmulti1 = 0.6;
+        // we'll use this with tapOut()
        
         Pathdelay2.setMaximumDelay(41000);
         Pathdelay2.clear();
-        Pathtime2 = 5000;                  // we'll use this with tapOut()
         Pathfilter2.setCutoff(4000);
-        Pathmulti2 = 0.5;
+        
         
         Pathdelay3.setMaximumDelay(41000);
         Pathdelay3.clear();
-        Pathtime3 = 6000;                  // we'll use this with tapOut()
         Pathfilter3.setCutoff(4500);
-        Pathmulti3 = 0.45;
+      
     
         Pathdelay4.setMaximumDelay(41000);
         Pathdelay4.clear();
-        Pathtime4 = 7000;                  // we'll use this with tapOut()
         Pathfilter4.setCutoff(5000);
-        Pathmulti4 = 0.4;
+       
 }
+void LaterReflection::setRoomSize(float scale)
+{
+// Delay scaling
+        Pathtime1 = basePathtime1 * scale;
+        Pathtime2 = basePathtime2 * scale;
+        Pathtime3 = basePathtime3 * scale;
+        Pathtime4 = basePathtime4 * scale;
+        
+//FeedBack comp
 
+        float fbScale = 1.0/ sqrt(scale);
+
+//Path multi scaling Keep Multipilers always below 7 because there is no dampening
+         Pathmulti1 = baseMulti1 * fbScale;
+         Pathmulti2 = baseMulti2 * fbScale;
+         Pathmulti3 = baseMulti3 * fbScale;
+         Pathmulti4 = baseMulti4 * fbScale;
+}
 float LaterReflection::process(float fin1, float fin0)
 {
         float fmonoIn = (fin1 + fin0)* 0.5;
@@ -173,19 +194,23 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
     float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
     float mix = parameters[0];
     float earlyGain = parameters[1];
+    float roomSize = parameters[2];
+        earlyReflections.setRoomSize(roomSize);
+        lateBlock0.setRoomSize(roomSize);
+        LateBlock1.setRoomSize(roomSize);
     while(numSamples--)
     {
         // Get sample from input
         fIn0 = *pfInBuffer0++;
         fIn1 = *pfInBuffer1++;
+        
         float dry = 0.5 * (fIn0 + fIn1);
         
         float early = earlyReflections.process(fIn0, fIn1) * earlyGain;
         float late  = lateBlock0.process(early, early);
         float latest = LateBlock1.process(late, late);
 
-        float wet = (early + late + latest)
-        * 1.5;
+        float wet = (early + late + latest) * 1.5;
         float out = (1.0 - mix) * dry + mix * wet;
 
         // Add your effect processing here

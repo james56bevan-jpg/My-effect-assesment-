@@ -14,7 +14,7 @@ public:
     
     float Pathtime1, Pathtime2, Pathtime3, Pathtime4;
     float Pathmulti1, Pathmulti2, Pathmulti3, Pathmulti4;
-    
+    void  setRoomSize(float Scale);
 private:
     Delay Pathdelay1;
     Delay Pathdelay2;
@@ -25,7 +25,16 @@ private:
     LPF Pathfilter2;
     LPF Pathfilter3;
     LPF Pathfilter4;
-
+    
+    int basePathtime1 = 4000;
+    int basePathtime2 = 5000;
+    int basePathtime3 = 6000;
+    int basePathtime4 = 7000;
+    
+    float baseMulti1 = 0.6f;
+    float baseMulti2 = 0.5f;
+    float baseMulti3 = 0.45f;
+    float baseMulti4 = 0.4f;
 };
 class EarlyReflections
 {
@@ -34,15 +43,18 @@ public:
    EarlyReflections();
    
    void prepare(int maxDelaySamples);
+   void setRoomSize(float scale);
    float process(float fin0 , float fin1);
    private:
    static constexpr int numTaps = 12;
-   
+    
    float delayTime[numTaps] = {
    101, 211, 347, 400, 202, 422,
    694, 800, 303, 633, 1041, 1200
    };
-  
+   
+   float baseDelayTime[numTaps];
+   
    float delayLevel[numTaps] = {
         0.90f, 0.82f, 0.75f, 0.69f,
         0.63f, 0.58f, 0.53f, 0.49f,
