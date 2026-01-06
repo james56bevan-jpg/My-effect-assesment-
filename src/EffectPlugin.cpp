@@ -65,6 +65,7 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
  void EarlyReflections::prepare(int maxDelaySamples)
 {
     Reflections.setMaximumDelay(maxDelaySamples);
+    Reflections.setDelay(maxDelaySamples - 1);
     Reflections.clear();
 }
 void EarlyReflections::setRoomSize(float scale)
@@ -91,23 +92,29 @@ for (int i = 0; i < numTaps; i++)
 LaterReflection::LaterReflection()
 {
         Pathdelay1.setMaximumDelay(41000);
+        Pathdelay1.setDelay(basePathtime1);
         Pathdelay1.clear();
         Pathfilter1.setCutoff(3000);
         // we'll use this with tapOut()
        
         Pathdelay2.setMaximumDelay(41000);
+        Pathdelay2.setDelay(basePathtime2);
         Pathdelay2.clear();
         Pathfilter2.setCutoff(4000);
         
         
         Pathdelay3.setMaximumDelay(41000);
+        Pathdelay3.setDelay(basePathtime3);
         Pathdelay3.clear();
         Pathfilter3.setCutoff(4500);
       
     
         Pathdelay4.setMaximumDelay(41000);
+        Pathdelay4.setDelay(basePathtime4);
         Pathdelay4.clear();
         Pathfilter4.setCutoff(5000);
+        
+        setRoomSize(1.0);
        
 }
 void LaterReflection::setRoomSize(float scale)
