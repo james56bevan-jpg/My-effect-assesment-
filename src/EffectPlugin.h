@@ -18,38 +18,20 @@ class MyEffect : public APDI::Effect
 public:
     MyEffect(const Parameters& parameters, const Presets& presets); // constructor (initialise variables, etc.)
     ~MyEffect();                                                    // destructor (clean up, free memory, etc.)
-
     void setSampleRate(float sampleRate){ stk::Stk::setSampleRate(sampleRate); }
     float getSampleRate() const { return stk::Stk::sampleRate(); };
-
     void process(const float** inputBuffers, float** outputBuffers, int numSamples);
     
     void presetLoaded(int iPresetNum, const char *sPresetName);
     void optionChanged(int iOptionMenu, int iItem);
     void buttonPressed(int iButton);
-    
 
 private:
-    float PathProcess(float fIn0, float fIn1);
-    
-    float Pathmulti1; // Path 1
-    Delay Pathdelay1;
-    float Pathtime1;
-    LPF Pathfilter1;
-    
-    float Pathmulti2; // Path 2
-    Delay Pathdelay2;
-    float Pathtime2;
-    LPF Pathfliter2;
-    
-    float Pathmulti3; // Path 3
-    Delay Pathdelay3;
-    float Pathtime3;
-    LPF Pathfliter3;
-    
-    float Pathmulti4; // Path 4
-    Delay Pathdelay4;
-    float Pathtime4;
-    LPF Pathfliter4;
-    
+    float EarlyReflect (float fIn1, float fIn0);
+
+  
+    EarlyReflections earlyReflections;
+    LaterReflection lateBlock0;
+    LaterReflection LateBlock1;
+    float PreGain;
 };
