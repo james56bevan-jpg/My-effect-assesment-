@@ -29,10 +29,12 @@ public:
 private:
     float EarlyReflect (float fIn1, float fIn0);
 
-  
+    Delay preDelay;
     EarlyReflections earlyReflections;
     LaterReflection lateBlock0;
     LaterReflection LateBlock1;
     float PreGain;
+    float preDelayTime;
+    float smoothedPreDelay;
 };
 

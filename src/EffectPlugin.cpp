@@ -29,10 +29,10 @@ extern "C" {
         
         const Parameters CONTROLS = {
             //  name,       type,              min, max, initial, size
-            {   "Wet_Dry_mix", Parameter::ROTARY, 0.0, 1.0, 0.3, AUTO_SIZE  },
-            {   "Early_Gain",  Parameter::ROTARY, 0.0, 1.0, 1.0, AUTO_SIZE  },
-            {   "Param 2",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
-            {   "Param 3",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
+            {"Wet_Dry_mix", Parameter::ROTARY, 0.0, 1.0, 0.3, AUTO_SIZE  },
+          {"Pre-Delay_Time",Parameter::ROTARY, 0.0, 80.0,20.0, AUTO_SIZE  },
+            {  "Early_Gain",Parameter::ROTARY, 0.0, 1.0, 1.0, AUTO_SIZE  },
+            {   "",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 4",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 5",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 6",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
@@ -56,6 +56,10 @@ MyEffect::MyEffect(const Parameters& parameters, const Presets& presets)
 : Effect(parameters, presets)
 {   // Initialise member variables
   earlyReflections.prepare(41000);
+  smoothedPreDelay = 0.0f;
+  preDelay.setMaximumDelay(41000);
+  preDelay.clear();
+  preDelay.setDelay(0);
 }
  EarlyReflections::EarlyReflections()
  {}
@@ -172,15 +176,23 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
     const float *pfInBuffer0 = inputBuffers[0], *pfInBuffer1 = inputBuffers[1];
     float *pfOutBuffer0 = outputBuffers[0], *pfOutBuffer1 = outputBuffers[1];
     float mix = parameters[0];
-    float earlyGain = parameters[1];
+    float earlyGain = parameters[2];
+    float preDelayMs= parameters[1];
+    float predelaySamples = preDelayMs * getSampleRate() * 0.001f;
     while(numSamples--)
     {
         // Get sample from input
         fIn0 = *pfInBuffer0++;
         fIn1 = *pfInBuffer1++;
         float dry = 0.5 * (fIn0 + fIn1);
+        smoothedPreDelay =  // Move 0.5% of the way toward the target every sample
+            0.995f * smoothedPreDelay +
+            0.005f * predelaySamples;   //  smooths out most clicks and fuzzes from the parameter control especially when theres fast movement
+        preDelay.setDelay(smoothedPreDelay);
         
-        float early = earlyReflections.process(fIn0, fIn1) * earlyGain;
+        float pre = preDelay.tick(dry);
+        
+        float early = earlyReflections.process(pre, pre) * earlyGain;
         float late  = lateBlock0.process(early, early);
         float latest = LateBlock1.process(late, late);
 
