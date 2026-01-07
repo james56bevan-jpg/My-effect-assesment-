@@ -30,10 +30,10 @@ extern "C" {
         const Parameters CONTROLS = {
             //  name,       type,              min, max, initial, size
             {"Wet_Dry_mix", Parameter::ROTARY, 0.0, 1.0, 0.3, AUTO_SIZE  },
-          {"Pre-Delay_Time",Parameter::ROTARY, 0.0, 80.0,20.0, AUTO_SIZE  },
+          {"Pre-Delay_Time",Parameter::ROTARY, 0.0, 80.0,20.0, AUTO_SIZE },
             {  "Early_Gain",Parameter::ROTARY, 0.0, 1.0, 1.0, AUTO_SIZE  },
-            {   "",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
-            {   "Param 4",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
+              {"Gain_Late0",Parameter::ROTARY, 0.0, 1.0, 0.6, AUTO_SIZE  },
+              {"Gain_Late1",Parameter::ROTARY, 0.0, 1.0, 0.4, AUTO_SIZE  },
             {   "Param 5",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 6",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
             {   "Param 7",  Parameter::ROTARY, 0.0, 1.0, 0.0, AUTO_SIZE  },
@@ -178,7 +178,10 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
     float mix = parameters[0];
     float earlyGain = parameters[2];
     float preDelayMs= parameters[1];
+    float lateGain0 = parameters[3];
+    float lateGain1 = parameters[4];
     float predelaySamples = preDelayMs * getSampleRate() * 0.001f;
+    
     while(numSamples--)
     {
         // Get sample from input
@@ -193,10 +196,10 @@ void MyEffect::process(const float** inputBuffers, float** outputBuffers, int nu
         float pre = preDelay.tick(dry);
         
         float early = earlyReflections.process(pre, pre) * earlyGain;
-        float late  = lateBlock0.process(early, early);
-        float latest = LateBlock1.process(late, late);
+        float late0  = lateBlock0.process(early, early) * lateGain0;
+        float late1 = LateBlock1.process(late0, late0) * lateGain1;
 
-        float wet = (early + late + latest)
+        float wet = (early + late0 + late1)
         * 1.5;
         float out = (1.0 - mix) * dry + mix * wet;
 
